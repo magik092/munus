@@ -284,4 +284,147 @@ final class SetTest extends TestCase
         self::assertTrue(Set::empty()->equals(Set::empty()->addAll(Set::empty())));
         self::assertTrue(Set::of('a', 'b', 'c')->equals(Set::of('a')->addAll(Set::of('a', 'b', 'c'))));
     }
+
+    public function testSlidingOnEmpty(): void
+    {
+        $set = Set::empty();
+        $result = $set->sliding(1, 1);
+
+        self::assertEquals(0, $result->length());
+    }
+
+    public function testSlidingBigWindow(): void
+    {
+        $set = Set::ofAll([1, 2, 3, 4, 5]);
+        $result = $set->sliding(2, 4);
+
+        self::assertEquals(2, $result->length());
+        self::assertTrue(Set::of(1, 2)->equals($result->toArray()[0]));
+        self::assertTrue(Set::of(5)->equals($result->toArray()[1]));
+    }
+
+    public function testSetSlidingWithSameStepAndSize(): void
+    {
+        $set = Set::of(1, 2, 3, 4, 5, 6);
+        $result = $set->sliding(2, 2);
+
+        self::assertEquals(3, $result->length());
+        self::assertTrue(Set::of(1, 2)->equals($result->toArray()[0]));
+        self::assertTrue(Set::of(3, 4)->equals($result->toArray()[1]));
+        self::assertTrue(Set::of(5, 6)->equals($result->toArray()[2]));
+    }
+
+    public function testSetSlidingWithSameStepAndSizeLastRangeDifferent(): void
+    {
+        $set = Set::of(1, 2, 3, 4, 5, 6, 7, 8);
+        $result = $set->sliding(3, 3);
+
+        self::assertEquals(3, $result->length());
+        self::assertTrue(Set::of(1, 2, 3)->equals($result->toArray()[0]));
+        self::assertTrue(Set::of(4, 5, 6)->equals($result->toArray()[1]));
+        self::assertTrue(Set::of(7, 8)->equals($result->toArray()[2]));
+    }
+
+    public function testSetSlidingWithSameStepAndSizeLastRangeDifferent100(): void
+    {
+        $set = Set::ofAll(range(1, 100));
+        $result = $set->sliding(10, 5);
+
+        self::assertEquals(20, $result->length());
+        self::assertTrue(Set::of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)->equals($result->toArray()[0]));
+        self::assertTrue(Set::of(6, 7, 8, 9, 10, 11, 12, 13, 14, 15)->equals($result->toArray()[1]));
+        self::assertTrue(Set::of(96, 97, 98, 99, 100)->equals($result->toArray()[19]));
+    }
+
+    public function testSetSlidingWithLargerSize(): void
+    {
+        $set = Set::of(1, 2, 3, 4, 5);
+        $result = $set->sliding(3, 1);
+
+        self::assertEquals(5, $result->length());
+        self::assertTrue(Set::of(1, 2, 3)->equals($result->toArray()[0]));
+        self::assertTrue(Set::of(2, 3, 4)->equals($result->toArray()[1]));
+        self::assertTrue(Set::of(3, 4, 5)->equals($result->toArray()[2]));
+        self::assertTrue(Set::of(4, 5)->equals($result->toArray()[3]));
+        self::assertTrue(Set::of(5)->equals($result->toArray()[4]));
+    }
+
+    public function testSetGroupedOnEmpty(): void
+    {
+        $set = Set::empty();
+        $result = $set->grouped(2);
+
+        self::assertEquals(0, $result->length());
+    }
+
+    public function testSetGroupedWithAllWindowSame(): void
+    {
+        $set = Set::of(1, 2, 3, 4, 5, 6);
+        $result = $set->grouped(2);
+
+        self::assertEquals(3, $result->length());
+        self::assertTrue(Set::of(1, 2)->equals($result->toArray()[0]));
+        self::assertTrue(Set::of(3, 4)->equals($result->toArray()[1]));
+        self::assertTrue(Set::of(5, 6)->equals($result->toArray()[2]));
+    }
+
+    public function testSetGroupedWithRemainder(): void
+    {
+        $set = Set::of(1, 2, 3, 4, 5);
+        $result = $set->grouped(2);
+
+        self::assertEquals(3, $result->length());
+        self::assertTrue(Set::of(1, 2)->equals($result->toArray()[0]));
+        self::assertTrue(Set::of(3, 4)->equals($result->toArray()[1]));
+        self::assertTrue(Set::of(5)->equals($result->toArray()[2]));
+    }
+
+    public function testSetGroupedSingleElement(): void
+    {
+        $set = Set::of(1, 2, 3);
+        $result = $set->grouped(1);
+
+        self::assertEquals(3, $result->length());
+        self::assertTrue(Set::of(1)->equals($result->toArray()[0]));
+        self::assertTrue(Set::of(2)->equals($result->toArray()[1]));
+        self::assertTrue(Set::of(3)->equals($result->toArray()[2]));
+    }
+
+    public function testSetSlidingBehavesLikeGroupedWhenStepEqualsSize(): void
+    {
+        $set = Set::of(1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $slidingResult = $set->sliding(3, 3);
+        $groupedResult = $set->grouped(3);
+
+        self::assertEquals($groupedResult->length(), $slidingResult->length());
+        self::assertTrue(Set::of(1, 2, 3)->equals($slidingResult->toArray()[0]));
+        self::assertTrue(Set::of(4, 5, 6)->equals($slidingResult->toArray()[1]));
+        self::assertTrue(Set::of(7, 8, 9)->equals($slidingResult->toArray()[2]));
+
+        self::assertTrue($slidingResult->equals($groupedResult));
+    }
+
+    public function testSetSlidingBehavesLikeGroupedWhenStepEqualsSizeForDifferentLastWindow(): void
+    {
+        $set = Set::of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
+        $slidingResult = $set->sliding(3, 3);
+        $groupedResult = $set->grouped(3);
+
+        self::assertEquals($groupedResult->length(), $slidingResult->length());
+        self::assertTrue(Set::of(1, 2, 3)->equals($slidingResult->toArray()[0]));
+        self::assertTrue(Set::of(4, 5, 6)->equals($slidingResult->toArray()[1]));
+        self::assertTrue(Set::of(7, 8, 9)->equals($slidingResult->toArray()[2]));
+        self::assertTrue(Set::of(10, 11)->equals($slidingResult->toArray()[3]));
+
+        self::assertTrue($slidingResult->equals($groupedResult));
+    }
+
+    public function testSetGroupedLargerSize(): void
+    {
+        $set = Set::of(1, 2);
+        $result = $set->grouped(4);
+
+        self::assertEquals(1, $result->length());
+        self::assertTrue(Set::of(1, 2)->equals($result->toArray()[0]));
+    }
 }

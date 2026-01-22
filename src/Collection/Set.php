@@ -356,4 +356,38 @@ final class Set extends Traversable
 
         return self::fromPointer($sliced);
     }
+
+    /**
+     * @return self<self<T>>|self<T>
+     */
+    public function sliding(int $size, int $step): self
+    {
+        if ($size <= 0 || $step <= 0) {
+            throw new \InvalidArgumentException("size ($size) and step ($step) must both be positive");
+        }
+
+        if ($this->isEmpty()) {
+            return self::empty();
+        }
+
+        $result = [];
+        $array = &$this->elements;
+        $length = count($array);
+
+        for ($i = 0; $i < $length; $i += $step) {
+            $chunkSize = min($size, $length - $i);
+            $chunk = array_slice($array, $i, $chunkSize);
+            $result[] = self::fromPointer($chunk);
+        }
+
+        return self::fromPointer($result);
+    }
+
+    /**
+     * @return self<self<T>>
+     */
+    public function grouped(int $size): self
+    {
+        return $this->sliding($size, $size);
+    }
 }
